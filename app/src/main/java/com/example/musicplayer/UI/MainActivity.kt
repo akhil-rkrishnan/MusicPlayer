@@ -5,9 +5,12 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.musicplayer.MusicViewModel
 import com.example.musicplayer.R
 
@@ -19,11 +22,13 @@ class MainActivity : AppCompatActivity() {
     private var mPermissionArray = arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE,
             Manifest.permission.WRITE_EXTERNAL_STORAGE)
     private lateinit var mContext: Context
+    private lateinit var mRecyclerView: RecyclerView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mContext = this
         setContentView(R.layout.activity_main)
+        mRecyclerView = findViewById(R.id.recyclerView)
         mMusicViewModel = ViewModelProvider(this).get(MusicViewModel::class.java)
         mMusicViewModel.setContext(this)
     }
@@ -45,6 +50,9 @@ class MainActivity : AppCompatActivity() {
 
     fun fetchListFromStorage() {
         mMusicViewModel.readFilesFromStorage()
+        mRecyclerView.setHasFixedSize(true)
+        mRecyclerView.layoutManager = LinearLayoutManager(this)
+        mRecyclerView.adapter = mMusicViewModel.getListAdapter()
     }
 
     /*Checking permission for storage read*/
