@@ -2,7 +2,6 @@ package com.example.musicplayer.data
 
 import android.net.Uri
 import com.example.musicplayer.Constants
-import java.net.URI
 
 class MusicStore {
 
@@ -33,5 +32,7 @@ class MusicStore {
     fun getDuration() : String {
         return this.mSongName;
     }
-
+    fun getUri() : Uri {
+        return this.mUri
+    }
  }

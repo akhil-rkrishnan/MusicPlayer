@@ -1,7 +1,6 @@
 package com.example.musicplayer
 
 import android.content.Context
-import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Environment
 import androidx.lifecycle.ViewModel
@@ -35,7 +34,7 @@ class MusicViewModel: ViewModel() {
             if (item.isDirectory) {
                 arrayList.addAll(filterSongs(item))
             } else {
-                if (item.name.endsWith(".mp3")) {
+                if (item.name.endsWith(".mp3") && !item.name.startsWith(".")) {
                     var musicStore = MusicStore()
                     musicStore.setUri(Uri.parse(item.toString()))
                     musicStore.setSongName(item.name.replace(".mp3",""))
