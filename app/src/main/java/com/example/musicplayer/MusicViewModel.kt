@@ -37,6 +37,7 @@ class MusicViewModel: ViewModel() {
                 if (item.name.endsWith(".mp3") && !item.name.startsWith(".")) {
                     var musicStore = MusicStore()
                     musicStore.setUri(Uri.parse(item.toString()))
+                    musicStore.setPath(item.absolutePath)
                     musicStore.setSongName(item.name.replace(".mp3",""))
                     arrayList.add(musicStore)
                 }

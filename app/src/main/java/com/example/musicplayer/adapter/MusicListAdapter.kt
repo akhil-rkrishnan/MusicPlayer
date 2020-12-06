@@ -3,14 +3,14 @@ package com.example.musicplayer.adapter
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.MediaPlayer
+import android.os.Handler
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.FrameLayout
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
+import android.widget.*
+import androidx.core.os.postDelayed
 import androidx.recyclerview.widget.RecyclerView
+import com.example.musicplayer.Constants
 import com.example.musicplayer.R
 import com.example.musicplayer.data.MusicStore
 
@@ -20,6 +20,9 @@ class MusicListAdapter(context: Context) : RecyclerView.Adapter<MusicListAdapter
     var currentPlayIndex = -1;
     var mMediaPlayer = MediaPlayer()
     var lastView = LinearLayout(mContext)
+    var mMediaHandler = Handler()
+    lateinit var mMediaRunnable: Runnable
+    var constants = Constants()
 
     /**
      * Provide a reference to the type of views that you are using
@@ -37,6 +40,7 @@ class MusicListAdapter(context: Context) : RecyclerView.Adapter<MusicListAdapter
         val seekPrevious: ImageView
         val parentLayout: FrameLayout
         val playBackContainer: LinearLayout
+        val playSeekBar: SeekBar
 
         init {
             // Define click listener for the ViewHolder's View.
@@ -46,6 +50,7 @@ class MusicListAdapter(context: Context) : RecyclerView.Adapter<MusicListAdapter
             seekPrevious = view.findViewById(R.id.skip_previous)
             parentLayout = view.findViewById(R.id.parent_layout)
             playBackContainer = view.findViewById(R.id.playback_control_layout)
+            playSeekBar = view.findViewById(R.id.play_seekbar)
         }
 
     }
@@ -92,11 +97,16 @@ class MusicListAdapter(context: Context) : RecyclerView.Adapter<MusicListAdapter
                             .build()
                     )
                 }
-                setDataSource(mContext, musicStoreItem.getUri())
+                setDataSource(musicStoreItem.getMusicPath())
                 prepare()
                 start()
             }
+            viewHolder.playSeekBar.max = mMediaPlayer.duration / 1000
+            makePlayBlackHandler(viewHolder.playSeekBar)
             currentPlayIndex = position;
+            mMediaPlayer.setOnCompletionListener {
+                viewHolder.playSeekBar.setProgress(0)
+            }
         }
         viewHolder.playPause.setOnClickListener { view ->
             if (mMediaPlayer?.isPlaying) {
@@ -110,6 +120,18 @@ class MusicListAdapter(context: Context) : RecyclerView.Adapter<MusicListAdapter
 
     }
 
+    public fun makePlayBlackHandler(seekBar: SeekBar) {
+        mMediaRunnable = Runnable {
+            var currentDuration = mMediaPlayer.currentPosition / constants.TIME_MILLISECONDS
+            seekBar.setProgress(currentDuration.toInt())
+            println("Current duration: " + currentDuration)
+            mMediaHandler.postDelayed(mMediaRunnable, constants.TIME_MILLISECONDS)
+
+        }
+        mMediaHandler.postDelayed(mMediaRunnable, constants.TIME_MILLISECONDS)
+    }
+
     // Return the size of your dataset (invoked by the layout manager)
     override fun getItemCount() = this.musicDataList?.size
 }
+

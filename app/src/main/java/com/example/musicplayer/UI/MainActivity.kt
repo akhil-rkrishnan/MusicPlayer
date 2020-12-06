@@ -22,6 +22,7 @@ class MainActivity : AppCompatActivity() {
             Manifest.permission.WRITE_EXTERNAL_STORAGE)
     private lateinit var mContext: Context
     private lateinit var mRecyclerView: RecyclerView
+    private var LOADED = 0;
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,10 +49,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun fetchListFromStorage() {
-        mMusicViewModel.readFilesFromStorage()
-        mRecyclerView.setHasFixedSize(true)
-        mRecyclerView.layoutManager = LinearLayoutManager(this)
-        mRecyclerView.adapter = mMusicViewModel.getListAdapter()
+        if (LOADED == 0) {
+            mMusicViewModel.readFilesFromStorage()
+            mRecyclerView.setHasFixedSize(true)
+            mRecyclerView.layoutManager = LinearLayoutManager(this)
+            mRecyclerView.adapter = mMusicViewModel.getListAdapter()
+            LOADED = 1
+        }
     }
 
     /*Checking permission for storage read*/
