@@ -77,17 +77,16 @@ class MusicListAdapter(context: Context) : RecyclerView.Adapter<MusicListAdapter
             if (currentPlayIndex == position) {
                 return@setOnClickListener
             }
-
             if (mMediaPlayer?.isPlaying) {
                 mMediaPlayer.stop()
             }
-
             if (lastView != null) {
                 lastView.visibility = View.GONE
             }
 
             lastView = viewHolder.playBackContainer
             lastView.visibility = View.VISIBLE
+
             mMediaPlayer = MediaPlayer().apply {
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
                     setAudioAttributes(
@@ -101,21 +100,28 @@ class MusicListAdapter(context: Context) : RecyclerView.Adapter<MusicListAdapter
                 prepare()
                 start()
             }
+
             viewHolder.playSeekBar.max = mMediaPlayer.duration / 1000
             makePlayBlackHandler(viewHolder.playSeekBar)
-            currentPlayIndex = position;
+            currentPlayIndex = position
+
             mMediaPlayer.setOnCompletionListener {
                 viewHolder.playSeekBar.setProgress(0)
             }
         }
+
         viewHolder.playPause.setOnClickListener { view ->
+
             if (mMediaPlayer?.isPlaying) {
                 mMediaPlayer.pause()
+                mMediaHandler.removeCallbacks(mMediaRunnable)
                 viewHolder.playPause.setImageResource(R.drawable.play)
             } else {
                 mMediaPlayer.start()
+                makePlayBlackHandler(viewHolder.playSeekBar)
                 viewHolder.playPause.setImageResource(R.drawable.pause)
             }
+
         }
 
     }
