@@ -5,6 +5,7 @@ import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.os.Handler
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
@@ -20,6 +21,7 @@ class MusicListAdapter(context: Context) : RecyclerView.Adapter<MusicListAdapter
     var currentPlayIndex = -1;
     var mMediaPlayer = MediaPlayer()
     var lastView = LinearLayout(mContext)
+    var lastViewSeek = SeekBar(mContext)
     var mMediaHandler = Handler()
     lateinit var mMediaRunnable: Runnable
     var constants = Constants()
@@ -55,6 +57,10 @@ class MusicListAdapter(context: Context) : RecyclerView.Adapter<MusicListAdapter
 
     }
 
+    override fun getItemId(position: Int): Long {
+        return position.toLong()
+    }
+
     // Create new views (invoked by the layout manager)
     override fun onCreateViewHolder(viewGroup: ViewGroup, viewType: Int): ViewHolder {
         // Create a new view, which defines the UI of the list item
@@ -71,8 +77,6 @@ class MusicListAdapter(context: Context) : RecyclerView.Adapter<MusicListAdapter
         // contents of the view with that element
         val musicStoreItem = musicDataList.get(position)
         viewHolder.musicName.text = musicStoreItem.getSongName()
-//        var mediaPlayer: MediaPlayer? = MediaPlayer.create(mContext, uri)
-
         viewHolder.parentLayout.setOnClickListener { view ->
             if (currentPlayIndex == position) {
                 return@setOnClickListener
@@ -83,9 +87,14 @@ class MusicListAdapter(context: Context) : RecyclerView.Adapter<MusicListAdapter
             if (lastView != null) {
                 lastView.visibility = View.GONE
             }
+            if (lastViewSeek != null) {
+                lastViewSeek.visibility = View.GONE
+            }
 
             lastView = viewHolder.playBackContainer
+            lastViewSeek = viewHolder.playSeekBar
             lastView.visibility = View.VISIBLE
+            lastViewSeek.visibility = View.VISIBLE
 
             mMediaPlayer = MediaPlayer().apply {
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
@@ -110,7 +119,7 @@ class MusicListAdapter(context: Context) : RecyclerView.Adapter<MusicListAdapter
             }
         }
 
-        viewHolder.playPause.setOnClickListener { view ->
+        viewHolder.playPause.setOnClickListener {
 
             if (mMediaPlayer?.isPlaying) {
                 mMediaPlayer.pause()
@@ -124,7 +133,28 @@ class MusicListAdapter(context: Context) : RecyclerView.Adapter<MusicListAdapter
 
         }
 
+        viewHolder.playSeekBar.setOnSeekBarChangeListener(object :
+                SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seek: SeekBar,
+                                           progress: Int, fromUser: Boolean) {
+                // write custom code for progress is changed
+
+
+            }
+
+            override fun onStartTrackingTouch(seek: SeekBar) {
+                // write custom code for progress is started
+            }
+
+            override fun onStopTrackingTouch(seek: SeekBar) {
+                // write custom code for progress is stopped
+                mMediaHandler.removeCallbacks(mMediaRunnable)
+                mMediaPlayer.seekTo(seek.progress * 1000)
+                makePlayBlackHandler(seek)
+            }
+        })
     }
+
 
     public fun makePlayBlackHandler(seekBar: SeekBar) {
         mMediaRunnable = Runnable {
