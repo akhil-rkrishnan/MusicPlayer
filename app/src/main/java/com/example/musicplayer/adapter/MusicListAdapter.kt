@@ -25,6 +25,7 @@ class MusicListAdapter(context: Context) : RecyclerView.Adapter<MusicListAdapter
     var mMediaHandler = Handler()
     lateinit var mMediaRunnable: Runnable
     var constants = Constants()
+    var alreadyPlayed = false
 
     /**
      * Provide a reference to the type of views that you are using
@@ -77,68 +78,76 @@ class MusicListAdapter(context: Context) : RecyclerView.Adapter<MusicListAdapter
         // contents of the view with that element
         val musicStoreItem = musicDataList.get(position)
         viewHolder.musicName.text = musicStoreItem.getSongName()
-        viewHolder.parentLayout.setOnClickListener { view ->
+        viewHolder.parentLayout.setOnClickListener {
             if (currentPlayIndex == position) {
                 return@setOnClickListener
             }
-            if (mMediaPlayer?.isPlaying) {
+            if (mMediaPlayer.isPlaying) {
                 mMediaPlayer.stop()
             }
-            if (lastView != null) {
-                lastView.visibility = View.GONE
-            }
-            if (lastViewSeek != null) {
-                lastViewSeek.visibility = View.GONE
-            }
-
-            lastView = viewHolder.playBackContainer
-            lastViewSeek = viewHolder.playSeekBar
-            lastView.visibility = View.VISIBLE
-            lastViewSeek.visibility = View.VISIBLE
-
-            mMediaPlayer = MediaPlayer().apply {
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-                    setAudioAttributes(
-                        AudioAttributes.Builder()
-                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                            .setUsage(AudioAttributes.USAGE_MEDIA)
-                            .build()
-                    )
-                }
-                setDataSource(musicStoreItem.getMusicPath())
-                prepare()
-                start()
-            }
-
-            viewHolder.playSeekBar.max = mMediaPlayer.duration / 1000
-            makePlayBlackHandler(viewHolder.playSeekBar)
             currentPlayIndex = position
-
-            mMediaPlayer.setOnCompletionListener {
-                viewHolder.playSeekBar.setProgress(0)
-            }
+            alreadyPlayed = false
+            notifyDataSetChanged()
         }
 
-        viewHolder.playPause.setOnClickListener {
+        if (currentPlayIndex == position) {
+            viewHolder.playBackContainer.visibility = View.VISIBLE
+            viewHolder.playSeekBar.visibility = View.VISIBLE
+            if (!mMediaPlayer.isPlaying && !alreadyPlayed) {
+                mMediaPlayer = MediaPlayer().apply {
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                        setAudioAttributes(
+                            AudioAttributes.Builder()
+                                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                                .setUsage(AudioAttributes.USAGE_MEDIA)
+                                .build()
+                        )
+                    }
+                    setDataSource(musicStoreItem.getMusicPath())
+                    prepare()
+                    start()
+                }
+                viewHolder.playSeekBar.max = mMediaPlayer.duration / 1000
+                makePlayBlackHandler(viewHolder.playSeekBar)
+                playPauseController(viewHolder.playPause, viewHolder.playSeekBar)
+                initialiseSeekChangeListener(viewHolder.playSeekBar, viewHolder.playPause)
+                alreadyPlayed = true
+            } else {
+                if (alreadyPlayed && !mMediaPlayer.isPlaying) {
+                    viewHolder.playPause.setImageResource(R.drawable.play)
+                    viewHolder.playSeekBar.setProgress(0)
+                } else {
+                    viewHolder.playSeekBar.setProgress(getPlayingCurrentDuration())
+                }
+            }
+        } else {
+            viewHolder.playBackContainer.visibility = View.GONE
+            viewHolder.playSeekBar.visibility = View.GONE
+        }
+    }
 
-            if (mMediaPlayer?.isPlaying) {
+    fun playPauseController(playPause: ImageView, playSeekBar: SeekBar) {
+        playPause.setOnClickListener {
+            if (mMediaPlayer.isPlaying) {
                 mMediaPlayer.pause()
                 mMediaHandler.removeCallbacks(mMediaRunnable)
-                viewHolder.playPause.setImageResource(R.drawable.play)
+                playPause.setImageResource(R.drawable.play)
             } else {
                 mMediaPlayer.start()
-                makePlayBlackHandler(viewHolder.playSeekBar)
-                viewHolder.playPause.setImageResource(R.drawable.pause)
+                makePlayBlackHandler(playSeekBar)
+                playPause.setImageResource(R.drawable.pause)
             }
-
         }
+    }
 
-        viewHolder.playSeekBar.setOnSeekBarChangeListener(object :
-                SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seek: SeekBar,
-                                           progress: Int, fromUser: Boolean) {
+    fun initialiseSeekChangeListener(playSeekBar: SeekBar, playPause: ImageView) {
+        playSeekBar.setOnSeekBarChangeListener(object :
+            SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(
+                seek: SeekBar,
+                progress: Int, fromUser: Boolean
+            ) {
                 // write custom code for progress is changed
-
 
             }
 
@@ -148,26 +157,36 @@ class MusicListAdapter(context: Context) : RecyclerView.Adapter<MusicListAdapter
 
             override fun onStopTrackingTouch(seek: SeekBar) {
                 // write custom code for progress is stopped
-                mMediaHandler.removeCallbacks(mMediaRunnable)
-                mMediaPlayer.seekTo(seek.progress * 1000)
-                makePlayBlackHandler(seek)
+                if (mMediaPlayer.isPlaying) {
+                    mMediaHandler.removeCallbacks(mMediaRunnable)
+                    mMediaPlayer.seekTo(playSeekBar.progress * 1000)
+                    makePlayBlackHandler(playSeekBar)
+                }
             }
         })
+        mMediaPlayer.setOnCompletionListener {
+            mMediaHandler.removeCallbacks(mMediaRunnable)
+            playSeekBar.setProgress(0)
+            playPause.setImageResource(R.drawable.play)
+        }
     }
 
-
-    public fun makePlayBlackHandler(seekBar: SeekBar) {
+    fun makePlayBlackHandler(seekBar: SeekBar) {
         mMediaRunnable = Runnable {
-            var currentDuration = mMediaPlayer.currentPosition / constants.TIME_MILLISECONDS
-            seekBar.setProgress(currentDuration.toInt())
-            println("Current duration: " + currentDuration)
+            seekBar.setProgress(getPlayingCurrentDuration())
+            println("Current duration: going")
             mMediaHandler.postDelayed(mMediaRunnable, constants.TIME_MILLISECONDS)
 
         }
         mMediaHandler.postDelayed(mMediaRunnable, constants.TIME_MILLISECONDS)
     }
 
+    fun getPlayingCurrentDuration(): Int {
+        var currentDuration = mMediaPlayer.currentPosition / constants.TIME_MILLISECONDS
+        return currentDuration.toInt()
+    }
+
     // Return the size of your dataset (invoked by the layout manager)
-    override fun getItemCount() = this.musicDataList?.size
+    override fun getItemCount() = this.musicDataList.size
 }
 
