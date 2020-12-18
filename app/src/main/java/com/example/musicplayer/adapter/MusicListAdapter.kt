@@ -90,6 +90,9 @@ class MusicListAdapter(context: Context) : RecyclerView.Adapter<MusicListAdapter
             notifyDataSetChanged()
         }
 
+        playPauseController(viewHolder.playPause, viewHolder.playSeekBar)
+        initialiseSeekChangeListener(viewHolder.playSeekBar, viewHolder.playPause)
+
         if (currentPlayIndex == position) {
             viewHolder.playBackContainer.visibility = View.VISIBLE
             viewHolder.playSeekBar.visibility = View.VISIBLE
@@ -109,14 +112,13 @@ class MusicListAdapter(context: Context) : RecyclerView.Adapter<MusicListAdapter
                 }
                 viewHolder.playSeekBar.max = mMediaPlayer.duration / 1000
                 makePlayBlackHandler(viewHolder.playSeekBar)
-                playPauseController(viewHolder.playPause, viewHolder.playSeekBar)
-                initialiseSeekChangeListener(viewHolder.playSeekBar, viewHolder.playPause)
                 alreadyPlayed = true
             } else {
                 if (alreadyPlayed && !mMediaPlayer.isPlaying) {
                     viewHolder.playPause.setImageResource(R.drawable.play)
                     viewHolder.playSeekBar.setProgress(0)
                 } else {
+                    viewHolder.playSeekBar.max = mMediaPlayer.duration / 1000
                     viewHolder.playSeekBar.setProgress(getPlayingCurrentDuration())
                 }
             }
@@ -168,6 +170,7 @@ class MusicListAdapter(context: Context) : RecyclerView.Adapter<MusicListAdapter
             mMediaHandler.removeCallbacks(mMediaRunnable)
             playSeekBar.setProgress(0)
             playPause.setImageResource(R.drawable.play)
+            Toast.makeText(mContext, "Finished", Toast.LENGTH_SHORT).show()
         }
     }
 
